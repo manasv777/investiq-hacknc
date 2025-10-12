@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Eye, EyeOff, Upload } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { AddressAutocomplete } from "./AddressAutocomplete";
 import { Label } from "./ui/label";
 import {
   Select,
@@ -64,9 +65,9 @@ export function OnboardingSteps({
   // Step A: Account Type
   if (currentStep === "A") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" role="region" aria-labelledby="step-a-heading">
         <div>
-          <h2 className="text-2xl font-bold text-[#0B1F3B] mb-2">
+          <h2 id="step-a-heading" className="text-2xl font-bold text-[#0B1F3B] mb-2">
             Choose Your Account Type
           </h2>
           <p className="text-gray-600">
@@ -119,9 +120,9 @@ export function OnboardingSteps({
   // Step B: Basics
   if (currentStep === "B") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" role="region" aria-labelledby="step-b-heading">
         <div>
-          <h2 className="text-2xl font-bold text-[#0B1F3B] mb-2">
+          <h2 id="step-b-heading" className="text-2xl font-bold text-[#0B1F3B] mb-2">
             Basic Information
           </h2>
           <p className="text-gray-600">
@@ -184,7 +185,9 @@ export function OnboardingSteps({
             onChange={(e) => handleInputChange("email", e.target.value)}
             placeholder="your.email@example.com"
             required
+            aria-describedby="email-help"
           />
+          <p id="email-help" className="text-xs text-gray-500 mt-1">We'll send important account information to this address.</p>
         </div>
 
         <div>
@@ -196,16 +199,18 @@ export function OnboardingSteps({
             onChange={(e) => handleInputChange("mobile", e.target.value)}
             placeholder="(555) 123-4567"
             required
+            aria-describedby="mobile-help"
           />
+          <p id="mobile-help" className="text-xs text-gray-500 mt-1">Used for security alerts and verification codes.</p>
         </div>
 
         <div className="pt-4 border-t">
           <div className="flex items-center gap-3 mb-4">
             <Checkbox
               id="hasMilitaryExperience"
-              checked={onboardingData.hasMilitaryExperience || false}
+              checked={onboardingData.hasMilitaryExperience === true}
               onCheckedChange={(checked) =>
-                handleInputChange("hasMilitaryExperience", String(checked))
+                updateOnboardingData({ hasMilitaryExperience: checked === true })
               }
             />
             <Label htmlFor="hasMilitaryExperience" className="cursor-pointer">
@@ -284,9 +289,9 @@ export function OnboardingSteps({
   // Step C: Security
   if (currentStep === "C") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" role="region" aria-labelledby="step-c-heading">
         <div>
-          <h2 className="text-2xl font-bold text-[#0B1F3B] mb-2">
+          <h2 id="step-c-heading" className="text-2xl font-bold text-[#0B1F3B] mb-2">
             Security & Verification
           </h2>
           <p className="text-gray-600">
@@ -314,9 +319,9 @@ export function OnboardingSteps({
           <div className="flex items-center gap-3 mb-2">
             <Checkbox
               id="isUsCitizen"
-              checked={onboardingData.isUsCitizen || false}
+              checked={onboardingData.isUsCitizen === true}
               onCheckedChange={(checked) =>
-                handleInputChange("isUsCitizen", String(checked))
+                updateOnboardingData({ isUsCitizen: checked === true })
               }
             />
             <Label htmlFor="isUsCitizen" className="cursor-pointer">
@@ -335,7 +340,7 @@ export function OnboardingSteps({
             <ExplainChip topic="SSN" onClick={() => onExplainClick("ssn")} />
           </div>
           {renderMaskedInput("ssn", "XXX-XX-XXXX", "text")}
-          <p className="text-xs text-gray-500 mt-1">
+          <p id="ssn-help" className="text-xs text-gray-500 mt-1">
             Required by federal law. This is never shown in full.
           </p>
         </div>
@@ -378,9 +383,9 @@ export function OnboardingSteps({
   // Step D: Address
   if (currentStep === "D") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" role="region" aria-labelledby="step-d-heading">
         <div>
-          <h2 className="text-2xl font-bold text-[#0B1F3B] mb-2">
+          <h2 id="step-d-heading" className="text-2xl font-bold text-[#0B1F3B] mb-2">
             Residential Address
           </h2>
           <p className="text-gray-600">
@@ -390,12 +395,14 @@ export function OnboardingSteps({
 
         <div>
           <Label htmlFor="street">Street Address *</Label>
-          <Input
-            id="street"
+          <AddressAutocomplete
             value={onboardingData.street || ""}
-            onChange={(e) => handleInputChange("street", e.target.value)}
-            placeholder="123 Main Street, Apt 4B"
-            required
+            onSelect={(addr) => {
+              handleInputChange("street", addr.street);
+              handleInputChange("city", addr.city);
+              handleInputChange("state", addr.state);
+              handleInputChange("zip", addr.zip);
+            }}
           />
         </div>
 
@@ -444,9 +451,9 @@ export function OnboardingSteps({
   // Step E: Employment
   if (currentStep === "E") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" role="region" aria-labelledby="step-e-heading">
         <div>
-          <h2 className="text-2xl font-bold text-[#0B1F3B] mb-2">
+          <h2 id="step-e-heading" className="text-2xl font-bold text-[#0B1F3B] mb-2">
             Employment & Investor Info
           </h2>
           <p className="text-gray-600">
@@ -502,9 +509,9 @@ export function OnboardingSteps({
           <div className="flex items-center gap-3 mb-2">
             <Checkbox
               id="financialInstitutionEmployment"
-              checked={onboardingData.financialInstitutionEmployment || false}
+              checked={onboardingData.financialInstitutionEmployment === true}
               onCheckedChange={(checked) =>
-                handleInputChange("financialInstitutionEmployment", String(checked))
+                updateOnboardingData({ financialInstitutionEmployment: checked === true })
               }
             />
             <Label
@@ -539,9 +546,9 @@ export function OnboardingSteps({
           <div className="flex items-center gap-3 mb-2">
             <Checkbox
               id="isRestrictedPerson"
-              checked={onboardingData.isRestrictedPerson || false}
+              checked={onboardingData.isRestrictedPerson === true}
               onCheckedChange={(checked) =>
-                handleInputChange("isRestrictedPerson", String(checked))
+                updateOnboardingData({ isRestrictedPerson: checked === true })
               }
             />
             <Label htmlFor="isRestrictedPerson" className="cursor-pointer">
@@ -576,9 +583,9 @@ export function OnboardingSteps({
           <div className="flex items-center gap-3">
             <Checkbox
               id="backupWithholding"
-              checked={onboardingData.backupWithholding || false}
+              checked={onboardingData.backupWithholding === true}
               onCheckedChange={(checked) =>
-                handleInputChange("backupWithholding", String(checked))
+                updateOnboardingData({ backupWithholding: checked === true })
               }
             />
             <Label htmlFor="backupWithholding" className="cursor-pointer">
@@ -597,9 +604,9 @@ export function OnboardingSteps({
   // Step F: Trusted Contact
   if (currentStep === "F") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" role="region" aria-labelledby="step-f-heading">
         <div>
-          <h2 className="text-2xl font-bold text-[#0B1F3B] mb-2">
+          <h2 id="step-f-heading" className="text-2xl font-bold text-[#0B1F3B] mb-2">
             Trusted Contact (Optional)
           </h2>
           <p className="text-gray-600">
@@ -669,9 +676,9 @@ export function OnboardingSteps({
   // Step G: Review & Confirm
   if (currentStep === "G") {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" role="region" aria-labelledby="step-g-heading">
         <div>
-          <h2 className="text-2xl font-bold text-[#0B1F3B] mb-2">
+          <h2 id="step-g-heading" className="text-2xl font-bold text-[#0B1F3B] mb-2">
             Review & Confirm
           </h2>
           <p className="text-gray-600">
@@ -704,9 +711,9 @@ export function OnboardingSteps({
           <div className="flex items-start gap-3">
             <Checkbox
               id="acknowledgedTerms"
-              checked={onboardingData.acknowledgedTerms || false}
+              checked={onboardingData.acknowledgedTerms === true}
               onCheckedChange={(checked) =>
-                handleInputChange("acknowledgedTerms", String(checked))
+                updateOnboardingData({ acknowledgedTerms: checked === true })
               }
               required
             />
@@ -718,9 +725,9 @@ export function OnboardingSteps({
           <div className="flex items-start gap-3">
             <Checkbox
               id="acknowledgedRisks"
-              checked={onboardingData.acknowledgedRisks || false}
+              checked={onboardingData.acknowledgedRisks === true}
               onCheckedChange={(checked) =>
-                handleInputChange("acknowledgedRisks", String(checked))
+                updateOnboardingData({ acknowledgedRisks: checked === true })
               }
               required
             />
@@ -732,9 +739,9 @@ export function OnboardingSteps({
           <div className="flex items-start gap-3">
             <Checkbox
               id="acknowledgedAccuracy"
-              checked={onboardingData.acknowledgedAccuracy || false}
+              checked={onboardingData.acknowledgedAccuracy === true}
               onCheckedChange={(checked) =>
-                handleInputChange("acknowledgedAccuracy", String(checked))
+                updateOnboardingData({ acknowledgedAccuracy: checked === true })
               }
               required
             />
@@ -746,9 +753,9 @@ export function OnboardingSteps({
           <div className="flex items-start gap-3">
             <Checkbox
               id="acknowledgedPrivacy"
-              checked={onboardingData.acknowledgedPrivacy || false}
+              checked={onboardingData.acknowledgedPrivacy === true}
               onCheckedChange={(checked) =>
-                handleInputChange("acknowledgedPrivacy", String(checked))
+                updateOnboardingData({ acknowledgedPrivacy: checked === true })
               }
               required
             />

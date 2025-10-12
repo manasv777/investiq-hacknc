@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 export function Chat() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [playingId, setPlayingId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -48,7 +49,13 @@ export function Chat() {
         }),
       });
 
-      const data = await response.json();
+      let data: any = {};
+      try {
+        data = await response.json();
+      } catch {
+        const fallbackText = await response.text().catch(() => "");
+        throw new Error(fallbackText || "Invalid server response");
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to get AI response");
@@ -85,7 +92,15 @@ export function Chat() {
   return (
     <div className="flex flex-col h-full">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div
+        className="flex-1 overflow-y-auto p-4 space-y-4"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions text"
+        aria-atomic="false"
+        aria-label="Chat messages"
+        aria-busy={isLoading}
+      >
         {chatMessages.length === 0 && (
           <div className="text-center text-gray-500 mt-8">
             <p className="text-lg font-medium">Welcome to InvestIQ</p>
@@ -117,6 +132,55 @@ export function Chat() {
             <span className="text-xs text-gray-500">
               {new Date(message.timestamp).toLocaleTimeString()}
             </span>
+
+            {message.role === "assistant" && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="text-xs underline text-blue-700 hover:text-blue-900"
+                  aria-label="Listen to this response"
+                  aria-busy={playingId === message.id}
+                  onClick={async () => {
+                    try {
+                      setPlayingId(message.id);
+                      const audioEl = document.createElement("audio");
+                      const canMp3 = !!audioEl.canPlayType && audioEl.canPlayType("audio/mpeg") !== "";
+                      const canOgg = !!audioEl.canPlayType && audioEl.canPlayType("audio/ogg; codecs=opus") !== "";
+                      const preferred = canMp3 ? "audio/mpeg" : canOgg ? "audio/ogg" : "audio/mpeg";
+                      const res = await fetch("/api/voice/speak", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ text: message.content, format: preferred }),
+                      });
+                      if (res.status === 204) return; // No audio available
+                      if (!res.ok) {
+                        // Warn in console, but don't throw to the user path
+                        const details = await res.text().catch(() => "");
+                        console.warn("TTS non-OK response", res.status, details);
+                        return;
+                      }
+                      const type = res.headers.get("Content-Type") || "";
+                      if (!type.includes("audio")) throw new Error("Unsupported media type");
+                      const blob = await res.blob();
+                      if (!blob || blob.size === 0) return;
+                      const url = URL.createObjectURL(blob);
+                      const audio = new Audio(url);
+                      audio.onended = () => {
+                        URL.revokeObjectURL(url);
+                        setPlayingId((id) => (id === message.id ? null : id));
+                      };
+                      await audio.play();
+                    } catch (e) {
+                      console.error("Audio play error", e);
+                    } finally {
+                      setPlayingId((id) => (id === message.id ? null : id));
+                    }
+                  }}
+                >
+                  {playingId === message.id ? "Playing…" : "Listen"}
+                </button>
+              </div>
+            )}
           </div>
         ))}
 
@@ -129,6 +193,7 @@ export function Chat() {
                 <span className="animate-bounce delay-200">●</span>
               </div>
             </div>
+            <span className="sr-only" aria-live="polite">Assistant is typing</span>
           </div>
         )}
 
@@ -145,6 +210,7 @@ export function Chat() {
             disabled={isLoading}
             className="flex-1"
             aria-label="Chat message input"
+            aria-describedby="chat-input-help"
           />
 
           <Button
@@ -155,6 +221,7 @@ export function Chat() {
           >
             <Send className="h-5 w-5" />
           </Button>
+          <p id="chat-input-help" className="sr-only">Press Enter to send. Use Shift+Enter for a new line.</p>
         </form>
       </div>
     </div>

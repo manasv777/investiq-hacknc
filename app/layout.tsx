@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { AccessibilityControls } from "@/components/AccessibilityControls";
+import { Providers } from "./providers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -28,9 +30,10 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <div className="min-h-screen flex flex-col" id="main-content">
-          {children}
+        <div className="min-h-screen flex flex-col" id="main-content" role="main">
+          <Providers>{children}</Providers>
         </div>
+        <AccessibilityControls />
       </body>
     </html>
   );

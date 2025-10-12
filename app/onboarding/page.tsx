@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { ArrowLeft, ArrowRight, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Chat } from "@/components/Chat";
@@ -18,6 +19,7 @@ const STEP_ORDER: OnboardingStep[] = ["A", "B", "C", "D", "E", "F", "G"];
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -27,6 +29,7 @@ export default function OnboardingPage() {
     markStepComplete,
     addChatMessage,
     initializeSession,
+    updateOnboardingData,
   } = useSessionStore();
 
   useEffect(() => {
@@ -117,6 +120,9 @@ export default function OnboardingPage() {
     try {
       // Mark final step complete
       markStepComplete("G");
+      // Persist completion timestamp to local state so dashboards reflect submission
+      const completedAtIso = new Date().toISOString();
+      updateOnboardingData({ completedAt: completedAtIso });
 
       // Log completion
       await fetch("/api/logs/append", {
@@ -137,7 +143,7 @@ export default function OnboardingPage() {
           sessionId: onboardingData.sessionId,
           updates: {
             ...onboardingData,
-            completedAt: new Date().toISOString(),
+            completedAt: completedAtIso,
           },
         }),
       });
@@ -242,6 +248,10 @@ export default function OnboardingPage() {
 
     input.click();
   };
+
+  if (status === "unauthenticated") {
+    router.push("/login");
+  }
 
   if (showSuccess) {
     return (

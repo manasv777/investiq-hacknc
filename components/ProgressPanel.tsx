@@ -27,6 +27,11 @@ export function ProgressPanel({ currentStep, completedSteps }: ProgressPanelProp
   const isStepComplete = (stepId: OnboardingStep) => completedSteps.includes(stepId);
   const isStepCurrent = (stepId: OnboardingStep) => stepId === currentStep;
 
+  // Calculate a user-friendly step number using currentStep; clamp to total steps
+  const currentIndex = Math.max(0, STEPS.findIndex((s) => s.id === currentStep));
+  const rawStepNum = currentIndex >= 0 ? currentIndex + 1 : completedSteps.length + 1;
+  const displayStepNum = Math.min(STEPS.length, Math.max(1, rawStepNum));
+
   return (
     <div className="bg-white p-6 rounded-lg border border-gray-200 h-full">
       <div className="space-y-6">
@@ -36,8 +41,7 @@ export function ProgressPanel({ currentStep, completedSteps }: ProgressPanelProp
           </h3>
           <Progress value={progress} className="h-3" aria-label="Progress bar" />
           <p className="text-sm text-gray-600 mt-2">
-            {Math.round(progress)}% Complete • Step {completedSteps.length + 1} of{" "}
-            {STEPS.length}
+            {Math.round(progress)}% Complete • Step {displayStepNum} of {STEPS.length}
           </p>
         </div>
 

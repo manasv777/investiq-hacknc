@@ -26,6 +26,27 @@ body {
   outline-offset: 2px;
 }
 
+/* High contrast mode */
+:root.a11y-high-contrast {
+  --a11y-text: #000000;
+}
+
+:root.a11y-high-contrast body,
+:root.a11y-high-contrast * {
+  color: var(--a11y-text) !important;
+  background-color: transparent;
+  border-color: #000000 !important;
+}
+
+:root.a11y-high-contrast a {
+  text-decoration: underline;
+}
+
+/* Text size scaling */
+:root[data-text-size="base"] { font-size: 100%; }
+:root[data-text-size="lg"] { font-size: 112.5%; }
+:root[data-text-size="xl"] { font-size: 125%; }
+
 /* Animation delays for loading dots */
 @keyframes bounce {
   0%, 100% {

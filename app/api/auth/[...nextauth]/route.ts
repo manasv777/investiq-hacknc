@@ -9,7 +9,12 @@ const handler = NextAuth({
     }),
   ],
   pages: {
-    signIn: "/",
+    signIn: "/login",
+  },
+  events: {
+    async signIn(message) {
+      // no-op hook placeholder
+    },
   },
   callbacks: {
     async session({ session, token }) {

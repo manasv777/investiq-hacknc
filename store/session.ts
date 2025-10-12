@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { OnboardingData, OnboardingStep, ChatMessage } from "@/lib/schemas";
 import { generateId } from "@/lib/utils";
 
@@ -26,7 +27,9 @@ interface SessionState {
   resetSession: () => void;
 }
 
-export const useSessionStore = create<SessionState>((set, get) => ({
+export const useSessionStore = create<SessionState>()(
+  persist(
+    (set, get) => ({
   sessionId: generateId(),
   chatMessages: [],
   showPrivateInput: false,
@@ -117,5 +120,39 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       showPrivateInput: false,
     });
   },
-}));
+    }),
+    {
+      name: "investiq-session", // localStorage key
+      version: 2,
+      migrate: (persisted: any, _version) => {
+        if (!persisted) return persisted;
+        const d = persisted.onboardingData || {};
+        const coerceBool = (v: any) => (v === true || v === "true" ? true : v === false || v === "false" ? false : v);
+        const boolFields = [
+          "hasMilitaryExperience",
+          "isUsCitizen",
+          "financialInstitutionEmployment",
+          "isRestrictedPerson",
+          "backupWithholding",
+          "acknowledgedTerms",
+          "acknowledgedRisks",
+          "acknowledgedAccuracy",
+          "acknowledgedPrivacy",
+        ];
+        boolFields.forEach((k) => {
+          if (k in d) d[k] = coerceBool(d[k]);
+        });
+        persisted.onboardingData = d;
+        return persisted;
+      },
+      partialize: (state) => ({
+        sessionId: state.sessionId,
+        userId: state.userId,
+        onboardingData: state.onboardingData,
+        chatMessages: state.chatMessages,
+        showPrivateInput: state.showPrivateInput,
+      }),
+    }
+  )
+);
 

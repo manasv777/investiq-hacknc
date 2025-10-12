@@ -1,11 +1,27 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Shield, Sparkles, TrendingUp } from "lucide-react";
+import { MarketWatch } from "@/components/MarketWatch";
+import { MarketCharts } from "@/components/MarketCharts";
+import { AuthButton } from "@/components/AuthButton";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
+  const { data: session } = useSession();
+  const [onboardingSubmitted, setOnboardingSubmitted] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = typeof window !== "undefined" ? window.localStorage.getItem("investiq-session") : null;
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      const completedAt = parsed?.state?.onboardingData?.completedAt;
+      setOnboardingSubmitted(Boolean(completedAt));
+    } catch {}
+  }, []);
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
       {/* Compliance Banner */}
@@ -42,11 +58,12 @@ export default function HomePage() {
               Learn
             </Link>
             <Link
-              href="/dashboard"
+              href="/analytics"
               className="text-sm text-gray-600 hover:text-[#0B1F3B]"
             >
-              Dashboard
+              Analytics
             </Link>
+            <AuthButton />
           </nav>
         </div>
       </header>
@@ -71,9 +88,9 @@ export default function HomePage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/onboarding">
+            <Link href={session ? (onboardingSubmitted ? "/dashboard" : "/onboarding") : "/login"}>
               <Button size="lg" className="gap-2 text-lg px-8 py-6">
-                Start AI-Guided Onboarding
+                {session ? (onboardingSubmitted ? "Visit Dashboard" : "Resume Onboarding") : "Start AI-Guided Onboarding"}
               </Button>
             </Link>
 
@@ -132,6 +149,8 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Market sections removed from homepage; shown in user dashboard */}
+
         {/* Sponsor Badges */}
         <div className="text-center py-8 border-t border-gray-200">
           <p className="text-sm text-gray-600 mb-4">Powered By</p>
@@ -150,10 +169,7 @@ export default function HomePage() {
             <p className="text-sm text-gray-600">
               © 2025 InvestIQ. Demo application for educational purposes.
             </p>
-            <div className="flex gap-6 text-sm text-gray-600">
-              <Link href="/deck" className="hover:text-[#0B1F3B]">
-                View Deck
-              </Link>
+            <div className="flex gap-6 text-sm text-gray-600 sm:mr-6 md:mr-10">
               <a href="#" className="hover:text-[#0B1F3B]">
                 Privacy
               </a>
