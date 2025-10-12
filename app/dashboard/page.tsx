@@ -6,18 +6,35 @@ import { ArrowLeft } from "lucide-react";
 import { KpiCard } from "@/components/KpiCard";
 import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
+import { useEffect } from "react";
+import { useSessionStore } from "@/store/session";
 import { AccountList } from "@/components/AccountList";
 import { MarketCharts } from "@/components/MarketCharts";
 import { MarketWatch } from "@/components/MarketWatch";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
+  const initializeSession = useSessionStore((s) => s.initializeSession);
+  const currentUserId = useSessionStore((s) => s.userId);
+  useEffect(() => {
+    if (session?.user?.id && session.user.id !== currentUserId) {
+      initializeSession(session.user.id);
+    }
+  }, [session?.user?.id, currentUserId, initializeSession]);
   // Derive a simple application status from persisted onboarding data
   // In a real app, read this from a database
   const stored = (typeof window !== "undefined" && window.localStorage.getItem("investiq-session")) || null;
   const parsed = stored ? (() => { try { return JSON.parse(stored); } catch { return null; } })() : null;
   const onboarding = parsed?.state?.onboardingData || {};
-  const appStatus = onboarding?.completedAt ? "Submitted" : onboarding?.currentStep ? `In Progress (Step ${onboarding.currentStep})` : "Not Started";
+  const appStatus = onboarding?.applicationStatus === 'approved'
+    ? 'Approved'
+    : onboarding?.applicationStatus === 'rejected'
+      ? 'Rejected'
+      : onboarding?.completedAt
+        ? 'Submitted'
+        : onboarding?.currentStep
+          ? `In Progress (Step ${onboarding.currentStep})`
+          : 'Not Started';
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -45,13 +62,33 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="space-y-8">
+            {onboarding?.applicationStatus === 'approved' && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-green-900 mb-1">Your account is activated</h3>
+                <p className="text-sm text-green-800 mb-3">Trading features are now enabled. You can fund your account and place trades.</p>
+                <div className="flex gap-3">
+                  <Link href="/trade" className="text-sm text-white bg-[#0B1F3B] px-3 py-2 rounded-md">Open Trading</Link>
+                  <Button variant="outline" className="text-sm">Deposit Funds</Button>
+                </div>
+              </div>
+            )}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-[#0B1F3B] mb-1">Application Status</h3>
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-700">{appStatus}</p>
-                <Link href="/onboarding" className="text-sm text-blue-700 hover:underline">
-                  {onboarding?.completedAt ? "View Application" : "Resume Application"}
-                </Link>
+                <div>
+                  <p className="text-sm text-gray-700">{appStatus}</p>
+                  {onboarding?.kycStatus && (
+                    <p className="text-xs text-gray-500 mt-1">KYC: {onboarding.kycStatus}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  {onboarding?.kycUrl && onboarding?.kycStatus !== 'approved' && (
+                    <a href={onboarding.kycUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-700 hover:underline">Continue KYC</a>
+                  )}
+                  <Link href="/onboarding" className="text-sm text-blue-700 hover:underline">
+                    {onboarding?.completedAt ? "View Application" : "Resume Application"}
+                  </Link>
+                </div>
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

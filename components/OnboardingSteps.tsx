@@ -349,7 +349,7 @@ export function OnboardingSteps({
           <div className="mb-4">
             <PrivacyToggle />
           </div>
-          <h3 className="font-semibold mb-3">Document Verification (Optional)</h3>
+          <h3 className="font-semibold mb-3">Document Verification (Optional - Fast Approval)</h3>
           <div className="grid grid-cols-2 gap-4">
             <Button
               type="button"
@@ -372,9 +372,32 @@ export function OnboardingSteps({
             </Button>
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            Scanning documents can speed up verification. All processing happens
-            locally on your device.
+            Provide an ID or utility bill and complete KYC to get your application approved faster.
+            Scanning happens locally; KYC is handled securely by Veriff.
           </p>
+
+          <div className="mt-4">
+            <Button
+              type="button"
+              onClick={async () => {
+                try {
+                  const res = await fetch('/api/kyc/veriff/session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId: onboardingData.sessionId, person: { givenName: onboardingData.firstName, lastName: onboardingData.lastName, idNumber: onboardingData.ssn } }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) throw new Error(data?.error || 'KYC error');
+                  // Open Veriff flow in new tab
+                  if (data?.kycUrl) window.open(data.kycUrl, '_blank');
+                } catch (e) {
+                  console.error('KYC start error', e);
+                }
+              }}
+            >
+              Start Fast Approval (Veriff)
+            </Button>
+          </div>
         </div>
       </div>
     );

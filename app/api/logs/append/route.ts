@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { mockDb } from "@/lib/mockdb";
+import { prisma } from "@/lib/db";
 
 export async function POST(request: Request) {
   try {
@@ -13,26 +13,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Append to onboarding logs
-    await mockDb.appendOnboardingLog({
-      sessionId,
-      userId,
-      step,
-      userInput: userInput || "",
-      aiOutput: aiOutput || "",
-      completed: completed || false,
+    // Append to audit logs table
+    await prisma.auditLog.create({
+      data: {
+        sessionId,
+        userId: userId || null,
+        details: JSON.stringify({ step, userInput, aiOutput, completed }),
+      },
     });
 
-    // Also append to audit logs if it's a significant event
-    if (completed) {
-      await mockDb.appendAuditLog({
-        eventId: `${sessionId}-${step}-${Date.now()}`,
-        sessionId,
-        eventType: "STEP_COMPLETED",
-        details: JSON.stringify({ step, userInput, aiOutput }),
-        timestamp: new Date().toISOString(),
-      });
-    }
+    // Optional: could also update Onboarding currentStep/completed here
 
     return NextResponse.json({
       success: true,

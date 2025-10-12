@@ -51,8 +51,10 @@ export const useSessionStore = create<SessionState>()(
         currentStep: "A",
         completedSteps: [],
         startedAt: new Date().toISOString(),
+        applicationStatus: "draft",
       },
       chatMessages: [],
+      showPrivateInput: false,
     });
   },
 

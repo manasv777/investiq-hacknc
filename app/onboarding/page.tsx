@@ -144,6 +144,7 @@ export default function OnboardingPage() {
           updates: {
             ...onboardingData,
             completedAt: completedAtIso,
+            applicationStatus: "submitted",
           },
         }),
       });

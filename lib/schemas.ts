@@ -101,6 +101,15 @@ export interface OnboardingData {
   // Risk Assessment
   riskTolerance?: string;
   experienceLevel?: string;
+
+  // KYC / Verification
+  kycProvider?: "veriff";
+  kycSessionId?: string;
+  kycStatus?: "pending" | "approved" | "rejected" | "resubmission_requested";
+  kycUrl?: string; // link to continue verification
+  kycUpdatedAt?: string;
+  applicationStatus?: "draft" | "submitted" | "approved" | "rejected";
+  approvedAt?: string;
   
   // Metadata
   currentStep?: OnboardingStep;

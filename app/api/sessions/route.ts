@@ -1,15 +1,20 @@
 import { NextResponse } from "next/server";
-import { mockDb } from "@/lib/mockdb";
+import { prisma } from "@/lib/db";
 
 // GET all sessions (for dashboard)
 export async function GET(request: Request) {
   try {
-    const sessions = await mockDb.getAllSessions();
-
-    return NextResponse.json({
-      sessions,
-      count: sessions.length,
-    });
+    const rows = await prisma.onboarding.findMany();
+    const sessions = rows.map((r) => ({
+      sessionId: r.sessionId,
+      userId: r.userId,
+      currentStep: r.currentStep || undefined,
+      completedSteps: [],
+      startedAt: r.startedAt.toISOString(),
+      completedAt: r.completedAt?.toISOString(),
+      ...((r.data as any) || {}),
+    }));
+    return NextResponse.json({ sessions, count: sessions.length });
   } catch (error) {
     console.error("Error fetching sessions:", error);
     return NextResponse.json(
@@ -24,16 +29,44 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { sessionId, updates } = body;
-
-    if (sessionId) {
-      // Update existing session
-      const updated = await mockDb.updateSession(sessionId, updates);
-      return NextResponse.json({ session: updated });
-    } else {
-      // Create new session
-      const newSession = await mockDb.createSession(updates);
-      return NextResponse.json({ session: newSession });
+    if (!sessionId) {
+      // Create new row keyed by generated sessionId
+      const created = await prisma.onboarding.create({
+        data: {
+          userId: updates.userId || "anon",
+          sessionId: updates.sessionId,
+          data: updates,
+          currentStep: updates.currentStep,
+          completedStepsJson: JSON.stringify(updates.completedSteps || []),
+          completedAt: updates.completedAt ? new Date(updates.completedAt) : null,
+          applicationStatus: updates.applicationStatus || null,
+          approvedAt: updates.approvedAt ? new Date(updates.approvedAt) : null,
+          kycProvider: updates.kycProvider || null,
+          kycSessionId: updates.kycSessionId || null,
+          kycStatus: updates.kycStatus || null,
+          kycUrl: updates.kycUrl || null,
+          kycUpdatedAt: updates.kycUpdatedAt ? new Date(updates.kycUpdatedAt) : null,
+        },
+      });
+      return NextResponse.json({ session: created });
     }
+    const updated = await prisma.onboarding.update({
+      where: { sessionId },
+      data: {
+        data: updates,
+        currentStep: updates.currentStep,
+        completedStepsJson: JSON.stringify(updates.completedSteps || []),
+        completedAt: updates.completedAt ? new Date(updates.completedAt) : null,
+        applicationStatus: updates.applicationStatus || null,
+        approvedAt: updates.approvedAt ? new Date(updates.approvedAt) : null,
+        kycProvider: updates.kycProvider || null,
+        kycSessionId: updates.kycSessionId || null,
+        kycStatus: updates.kycStatus || null,
+        kycUrl: updates.kycUrl || null,
+        kycUpdatedAt: updates.kycUpdatedAt ? new Date(updates.kycUpdatedAt) : null,
+      },
+    });
+    return NextResponse.json({ session: updated });
   } catch (error) {
     console.error("Error managing session:", error);
     return NextResponse.json(

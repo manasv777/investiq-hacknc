@@ -8,11 +8,12 @@ InvestIQ is a production-quality Next.js 14 web application that provides a seam
 
 ## Features
 
-### 🤖 AI-Powered Guidance
+### 🤖 AI-Powered Guidance (Chat + Voice)
 - Text-based chat interface for account opening assistance
-- Google Gemini (gemini-2.0-flash-exp) for intelligent, conversational responses
+- Google Gemini for intelligent, conversational responses
 - ≤120 word responses at grade 6-8 reading level
 - Context-aware assistance throughout the onboarding flow
+- Optional Text‑to‑Speech (TTS) playback of assistant messages via ElevenLabs
 
 ### 📋 Complete Onboarding Flow (Steps A-G)
 - **A. Account Type**: Stocks & Funds or Stocks, Funds & Crypto
@@ -29,23 +30,22 @@ InvestIQ is a production-quality Next.js 14 web application that provides a seam
 - Audit logging for all significant events
 - Compliance Mode banner on all pages
 
-### 📷 Document Scanning
-- Client-side OCR using Tesseract.js
-- ID and utility bill scanning
-- Field extraction and identity matching
-- No data leaves the browser
+### 📷 Document Scanning + ✅ Fast KYC (Veriff)
+- Client-side OCR using Tesseract.js (ID and utility bill)
+- Field extraction and identity matching (local-only processing)
+- One-click Fast Approval via Veriff KYC (facial recognition & document checks)
+- KYC status shown on personal dashboard; approved users see account activation
 
 ### ♿ Accessibility
-- Full keyboard navigation
-- ARIA labels and semantic HTML
-- High-contrast navy/white theme
-- Focus visible states
+- Full keyboard navigation (Skip link, logical landmarks)
+- ARIA live regions for chat updates; `aria-busy` while AI is responding
+- High-contrast toggle and adjustable text size (A / A+ / A++)
+- Visible focus outlines, proper labels/`aria-describedby`, and screen‑reader hints
 
-### 📊 Analytics Dashboard
-- Session tracking and completion rates
-- Step funnel visualization
-- Top FAQs analysis
-- Experience level distribution
+### 📊 Analytics (Admin) and 📈 Personal Dashboard
+- Analytics: step funnel, session counts (admin view)
+- Personal: accounts, KPIs, Market Watch, Market Performance (post-login)
+- CTA to resume/view onboarding and continue KYC if needed
 
 ### 📚 Investment Glossary
 - 20+ investment terms explained
@@ -57,10 +57,11 @@ InvestIQ is a production-quality Next.js 14 web application that provides a seam
 - **Framework**: Next.js 14 (App Router), TypeScript
 - **Styling**: Tailwind CSS, custom navy/white theme
 - **UI Components**: Radix UI primitives (shadcn/ui style)
-- **State**: Zustand
-- **AI**: Google Gemini with Mock Adapter fallback
+- **State**: Zustand (with local persistence)
+- **AI**: Google Gemini with mock fallback
+- **TTS**: ElevenLabs (graceful fallback if no key)
 - **OCR**: Tesseract.js (client-side)
-- **Auth**: NextAuth with Google OAuth (optional)
+- **Auth**: NextAuth (Google OAuth), Prisma adapter
 - **Charts**: Recharts
 - **Testing**: Playwright (E2E)
 - **Deployment**: Vercel-ready
@@ -70,8 +71,9 @@ InvestIQ is a production-quality Next.js 14 web application that provides a seam
 ### Prerequisites
 
 - Node.js 18+ and npm
+- Google OAuth credentials (required for login)
 - (Optional) Google Gemini API key for production AI
-- (Optional) Google OAuth credentials for auth
+- (Optional) ElevenLabs API key for TTS
 
 ### Installation
 
@@ -82,12 +84,14 @@ cd investiq
 # Install dependencies
 npm install
 
-# Copy environment variables
-cp .env.local.example .env.local
-
-# Edit .env.local with your API keys
-# GEMINI_API_KEY=your_key (Get from https://aistudio.google.com/app/apikey)
-# GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET for auth
+# Create .env.local and add:
+# DATABASE_URL="file:./dev.db"
+# NEXTAUTH_URL=http://localhost:3000
+# NEXTAUTH_SECRET=your_random_string
+# GOOGLE_CLIENT_ID=...
+# GOOGLE_CLIENT_SECRET=...
+# (optional) GEMINI_API_KEY=...
+# (optional) ELEVENLABS_API_KEY=...
 ```
 
 ### Development
@@ -126,9 +130,10 @@ investiq/
 ├── app/
 │   ├── api/                 # API routes
 │   │   ├── ai/              # AI completion & classification
-│   │   ├── logs/            # Audit logging
-│   │   ├── sessions/        # Session management
-│   │   └── analytics/       # Dashboard data
+│   │   ├── logs/            # Audit logging (Prisma)
+│   │   ├── sessions/        # Session management (Prisma)
+│   │   ├── analytics/       # Analytics data (Prisma)
+│   │   └── kyc/             # Veriff session + webhook
 │   ├── page.tsx             # Home page
 │   ├── onboarding/          # Two-pane wizard
 │   ├── dashboard/           # Analytics
@@ -142,14 +147,16 @@ investiq/
 │   └── TermCard.tsx         # Glossary terms
 ├── lib/
 │   ├── gemini.ts            # Google Gemini client
-│   ├── mockdb.ts            # In-memory database
+│   ├── db.ts                # Prisma client
 │   ├── ocr.ts               # Tesseract helpers
 │   ├── prompts.ts           # AI prompt templates
 │   ├── risk.ts              # Risk assessment
 │   ├── schemas.ts           # TypeScript types
 │   └── utils.ts             # Helpers
 ├── store/
-│   └── session.ts           # Zustand store
+│   └── session.ts           # Zustand store (persisted)
+├── prisma/
+│   └── schema.prisma        # SQLite schema (dev)
 ├── tests/
 │   └── e2e.spec.ts          # Playwright tests
 └── .env.local.example       # Environment template
@@ -157,11 +164,12 @@ investiq/
 
 ## API Integration
 
-The app uses Google Gemini for AI-powered chat assistance:
+The app integrates several services:
 
-- **Production**: Google Gemini API (gemini-2.0-flash-exp)
-- **Mock AI**: Keyword-based responses (SSN, DOB, risk, etc.)
-- **Mock DB**: In-memory storage with seeded data
+- **AI**: Google Gemini (fallback to mock)
+- **TTS**: ElevenLabs (graceful fallback and format negotiation)
+- **DB**: Prisma + SQLite (local dev). Switch to Postgres by updating `datasource db` and `DATABASE_URL`.
+- **KYC**: Veriff (session creation + webhook)
 
 This ensures the app is **fully functional for demos** without external dependencies.
 
@@ -202,22 +210,31 @@ docker run -p 3000:3000 --env-file .env.local investiq
 - Body: `{ text: string, labels?: string[] }`
 - Returns: `{ label: string }`
 
-### `/api/ai/vision`
-- **POST**: OCR document scanning
-- Body: FormData with `file`
-- Returns: `{ name: string, address: string, dob: string, confidence: number }`
+### `/api/kyc/veriff/session`
+- **POST**: Create Veriff verification session
+- Body: `{ sessionId: string, person: { givenName, lastName, idNumber? } }`
+- Returns: `{ kycSessionId, kycUrl, kycStatus }`
+
+### `/api/kyc/veriff/webhook`
+- **POST**: Veriff webhook handler
+- Body: Veriff event payload (includes `vendorData` with our sessionId)
+- Side effect: updates onboarding row with `kycStatus` and auto-approves on `approved`
 
 ### `/api/logs/append`
-- **POST**: Append to audit/onboarding logs
+- **POST**: Append to audit log (Prisma)
 - Body: `{ sessionId, step, userInput, aiOutput, completed }`
 - Returns: `{ success: boolean }`
 
 ### `/api/sessions`
-- **GET**: List all sessions
-- **POST**: Create/update session
+- **GET**: List sessions (Prisma)
+- **POST**: Create/update onboarding (Prisma)
 
 ### `/api/analytics`
-- **GET**: Dashboard data (funnel, FAQs, distribution)
+- **GET**: Analytics data: step funnel (Prisma)
+
+### `/api/voice/speak`
+- **POST**: ElevenLabs TTS – returns `audio/mpeg` or `audio/ogg`
+- Handles timeouts (504), content-type checks, and 204 when no key
 
 
 ## License

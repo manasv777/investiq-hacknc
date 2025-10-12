@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
             "img-src 'self' data: https:",
             "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
             "style-src 'self' 'unsafe-inline'",
-            "connect-src 'self' https://api.elevenlabs.io https://nominatim.openstreetmap.org",
+            "connect-src 'self' https://api.elevenlabs.io https://nominatim.openstreetmap.org https://api.veriff.me",
             "media-src 'self' blob:",
             "font-src 'self' data:",
             "frame-ancestors 'none'",
