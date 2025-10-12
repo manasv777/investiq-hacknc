@@ -77,7 +77,7 @@ InvestIQ is a production-quality Next.js 14 web application that provides a seam
 
 ```bash
 # Clone the repository
-cd investiq-voice
+cd investiq
 
 # Install dependencies
 npm install
@@ -122,7 +122,7 @@ npm start
 ## Project Structure
 
 ```
-investiq-voice/
+investiq/
 ├── app/
 │   ├── api/                 # API routes
 │   │   ├── ai/              # AI completion & classification
