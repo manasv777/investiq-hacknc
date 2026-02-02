@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ArrowLeft, ArrowRight, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,8 @@ const STEP_ORDER: OnboardingStep[] = ["A", "B", "C", "D", "E", "F", "G"];
 export default function OnboardingPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const searchParams = useSearchParams();
+  const manualOnboarding = searchParams?.get("manual") === "true";
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -250,7 +252,7 @@ export default function OnboardingPage() {
     input.click();
   };
 
-  if (status === "unauthenticated") {
+  if (status === "unauthenticated" && !manualOnboarding) {
     router.push("/login");
   }
 

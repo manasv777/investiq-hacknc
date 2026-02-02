@@ -4,8 +4,11 @@ import React from "react";
 import { Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-lg border border-gray-200 p-8">
@@ -21,6 +24,14 @@ export default function LoginPage() {
 
         <Button className="w-full" onClick={() => signIn("google", { callbackUrl: "/onboarding" })}>
           Continue with Google
+        </Button>
+
+        <Button
+          variant="outline"
+          className="w-full mt-3"
+          onClick={() => router.push('/onboarding?manual=true')}
+        >
+          Create account manually
         </Button>
 
         <p className="text-xs text-gray-500 mt-4">

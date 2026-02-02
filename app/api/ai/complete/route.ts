@@ -34,9 +34,36 @@ export async function POST(req: NextRequest) {
       { text: `User:\n${prompt}` },
     ];
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts }],
-    });
+    // Attempt generateContent with retries for transient 429 rate limits
+    const maxRetries = 3;
+    let attempt = 0;
+    let result: any = null;
+
+    while (attempt <= maxRetries) {
+      try {
+        result = await model.generateContent({
+          contents: [{ role: "user", parts }],
+        });
+        break; // success
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        // If it's a 429 / quota issue, retry with backoff
+        if (msg.includes("429") || msg.includes("Too Many Requests") || msg.includes("quota")) {
+          attempt++;
+          if (attempt > maxRetries) {
+            // rethrow to be handled by outer catch
+            throw err;
+          }
+          // exponential backoff with jitter
+          const delay = Math.pow(2, attempt) * 1000 + Math.floor(Math.random() * 500);
+          console.warn(`[/api/ai/complete] 429 received; retrying attempt ${attempt}/${maxRetries} after ${delay}ms`);
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
+        // Non-retryable error: rethrow
+        throw err;
+      }
+    }
 
     const text = (result.response.text() || "").trim();
     
@@ -60,11 +87,23 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (e: any) {
-    console.error("[/api/ai/complete] error:", e?.message || e);
+    const errorMsg = e?.message || String(e);
+    console.error("[/api/ai/complete] error:", errorMsg);
+    
+    // Detect 429 Too Many Requests (quota exceeded)
+    if (errorMsg.includes("429") || errorMsg.includes("Too Many Requests") || errorMsg.includes("quota")) {
+      console.error("[/api/ai/complete] Quota exceeded. Retrying after delay...");
+      return NextResponse.json({ 
+        error: "Gemini API quota exceeded", 
+        details: "The AI service is temporarily rate-limited. Please try again in a few moments.",
+        retryAfter: 30,
+      }, { status: 429 });
+    }
+    
     console.error("[/api/ai/complete] full error:", e);
     return NextResponse.json({ 
       error: "AI error occurred", 
-      details: e?.message || String(e) 
+      details: errorMsg
     }, { status: 500 });
   }
 }

@@ -58,7 +58,14 @@ export function Chat() {
       }
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to get AI response");
+        const errorDetails = data.details || data.error || "Failed to get AI response";
+        
+        // Handle 429 quota exceeded
+        if (response.status === 429) {
+          throw new Error(`Quota exceeded: ${errorDetails} (retry in ${data.retryAfter || 30}s)`);
+        }
+        
+        throw new Error(errorDetails);
       }
 
       // Add AI message
