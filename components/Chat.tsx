@@ -6,6 +6,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useSessionStore } from "@/store/session";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 export function Chat() {
   const [inputValue, setInputValue] = useState("");
@@ -20,6 +21,7 @@ export function Chat() {
     setCurrentStep,
     markStepComplete,
   } = useSessionStore();
+  const router = useRouter();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -74,9 +76,20 @@ export function Chat() {
         content: data.text,
       });
 
+      // If server instructed a redirect (e.g., "open account"), navigate to dashboard
+      if (data.redirectTo === "dashboard") {
+        try {
+          router.push("/dashboard");
+        } catch (e) {
+          console.warn("Router push failed", e);
+        }
+      }
+
       // Handle step progression if AI indicates we should move to next step
       if (data.nextStep && data.nextStep !== onboardingData.currentStep) {
-        markStepComplete(onboardingData.currentStep);
+        if (onboardingData.currentStep) {
+          markStepComplete(onboardingData.currentStep);
+        }
         setCurrentStep(data.nextStep);
       }
     } catch (error) {

@@ -67,8 +67,9 @@ export async function POST(req: NextRequest) {
 
     const text = (result.response.text() || "").trim();
     
-    // Determine if we should progress to the next step
-    let nextStep = null;
+    // Determine if we should progress to the next step or navigate the user
+    let nextStep: string | null = null;
+    let redirectTo: string | null = null;
     const lowerPrompt = prompt.toLowerCase();
     
     // Check if user is ready to move to next step
@@ -77,10 +78,16 @@ export async function POST(req: NextRequest) {
     } else if (lowerPrompt.includes("ready") && lowerPrompt.includes("basics") && currentStep === "A") {
       nextStep = "B"; // Move to Basics
     }
+
+    // If the user explicitly asks to open their account / go to dashboard, instruct client to redirect
+    if (lowerPrompt.includes("open account") || lowerPrompt.includes("open my account") || lowerPrompt.includes("go to dashboard") || lowerPrompt.includes("open dashboard")) {
+      redirectTo = "dashboard";
+    }
     
     return NextResponse.json({ 
       text,
       nextStep,
+      redirectTo,
       meta: {
         model: "gemini-1.5-flash",
         timestamp: new Date().toISOString(),

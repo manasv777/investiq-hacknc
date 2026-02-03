@@ -57,9 +57,14 @@ export default function DashboardPage() {
       <main className="max-w-7xl mx-auto p-6">
         {!session ? (
           <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-            <h2 className="text-xl font-semibold text-[#0B1F3B] mb-2">Welcome</h2>
-            <p className="text-gray-600">Sign in to see your personal portfolio dashboard.</p>
-          </div>
+              <h2 className="text-xl font-semibold text-[#0B1F3B] mb-2">Welcome</h2>
+              <p className="text-gray-600">Sign in to see your personal portfolio dashboard.</p>
+              <div className="mt-4">
+                <Button asChild>
+                  <Link href="/login">Sign in</Link>
+                </Button>
+              </div>
+            </div>
         ) : (
           <div className="space-y-8">
             {onboarding?.applicationStatus === 'approved' && (

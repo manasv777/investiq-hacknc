@@ -726,7 +726,7 @@ export function OnboardingSteps({
           </div>
           <div>
             <span className="font-medium">SSN:</span>{" "}
-            {maskSensitiveData(onboardingData.ssn || "", 4)}
+            {maskSensitiveData(onboardingData.ssn || "")}
           </div>
         </div>
 

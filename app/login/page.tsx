@@ -9,6 +9,8 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const router = useRouter();
 
+  
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-lg border border-gray-200 p-8">
@@ -33,6 +35,8 @@ export default function LoginPage() {
         >
           Create account manually
         </Button>
+
+        
 
         <p className="text-xs text-gray-500 mt-4">
           By continuing, you agree to our Terms and acknowledge our Privacy Policy.
